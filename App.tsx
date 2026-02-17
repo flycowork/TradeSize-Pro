@@ -16,7 +16,7 @@ import {
   ChevronDownIcon, 
   AdjustmentsHorizontalIcon 
 } from '@heroicons/react/24/outline';
-import { TradeParams, UserSettings } from './types';
+import { TradeParams, UserSettings } from './types.ts';
 
 const STORAGE_KEY = 'tradesize_pro_v6_settings';
 
@@ -253,10 +253,10 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        {/* side-by-side starting from sm: breakpoint (Landscape Mobile) */}
+        {/* Layout grid for Landscape Mobile (sm:grid-cols-2) and larger */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 items-stretch">
           
-          {/* Execution Strategy */}
+          {/* Execution Strategy Column */}
           <section className="space-y-6">
             <div className="bg-slate-900/40 border border-slate-800/60 rounded-[2.5rem] p-8 backdrop-blur-sm shadow-xl h-full">
               <h2 className="text-sm font-black mb-8 flex items-center gap-3 text-slate-400 uppercase tracking-[0.2em]">
@@ -315,7 +315,7 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          {/* Results Card */}
+          {/* Results Column */}
           <section className="space-y-8">
             <div className={`bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-800 rounded-[3.5rem] p-10 md:p-12 shadow-[0_40px_80px_rgba(79,70,229,0.45)] relative overflow-hidden group border border-white/10 transition-all duration-500 h-full flex flex-col justify-center ${isOverLeveraged ? 'ring-8 ring-rose-500/30' : ''}`}>
               <div className="absolute -top-16 -right-16 p-8 opacity-10 group-hover:scale-125 transition-transform duration-[2000ms]">
@@ -328,7 +328,7 @@ const App: React.FC = () => {
                     <ScaleIcon className="w-4 h-4" /> RECOMMENDED SIZE
                   </span>
                   
-                  {/* Position Badge: Centered below title and above size */}
+                  {/* Position Badge: Centered */}
                   <div className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs backdrop-blur-2xl shadow-2xl border-2 border-white/40 uppercase tracking-[0.25em] transition-all duration-500 mb-6 ${
                     results.positionType === 'LONG' ? 'bg-emerald-500/40 text-emerald-100 shadow-emerald-500/20' :
                     results.positionType === 'SHORT' ? 'bg-rose-500/40 text-rose-100 shadow-rose-500/20' : 'bg-slate-500/30 text-slate-300'
@@ -360,7 +360,7 @@ const App: React.FC = () => {
                   </div>
                 )}
 
-                {/* Footer Stats Grid: configured for Tablet Portrait requirements */}
+                {/* Footer Stats Grid for Tablet Portrait: Dollar Risk/Target Profit 50/50, R/R below */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full mt-4">
                   <div className="bg-white/10 rounded-[2rem] p-5 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center">
                     <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">Dollar Risk</p>
@@ -370,7 +370,6 @@ const App: React.FC = () => {
                     <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">Target Profit</p>
                     <p className="text-emerald-300 font-mono text-2xl lg:text-3xl font-black">${results.potentialProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                   </div>
-                  {/* R/R Factor below on tablet portrait (sm), but side-by-side on desktop (lg) */}
                   <div className={`bg-white/10 rounded-[2rem] p-5 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center sm:col-span-2 lg:col-span-1 ${results.riskRewardRatio < 2 ? 'border-rose-400/50 shadow-rose-500/10' : 'border-emerald-400/50 shadow-emerald-500/10'}`}>
                     <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">R/R Factor</p>
                     <div className="grid grid-cols-[1fr_auto_1fr] gap-2 w-full max-w-[200px] items-center text-white font-mono text-2xl lg:text-3xl font-black mx-auto">
@@ -442,7 +441,7 @@ const App: React.FC = () => {
       </main>
 
       <footer className="mt-auto pt-24 pb-12 text-center text-slate-800 text-[10px] font-black uppercase tracking-[0.6em] w-full max-w-6xl border-t border-slate-900/50">
-        TradeSize Pro &bull; Institutional Risk Engine &bull; PROTOCOL V6.9
+        TradeSize Pro &bull; Institutional Risk Engine &bull; PROTOCOL V7.0
       </footer>
     </div>
   );
