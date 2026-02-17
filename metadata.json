@@ -1,0 +1,5 @@
+{
+  "name": "TradeSize Pro",
+  "description": "A professional-grade position size calculator for traders to manage risk effectively based on account balance, daily risk limits, and stop loss distance.",
+  "requestFramePermissions": []
+}
