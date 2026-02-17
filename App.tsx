@@ -174,6 +174,7 @@ const App: React.FC = () => {
 
       <main className="w-full max-w-6xl space-y-8">
         
+        {/* Capital Allocation */}
         <section className="bg-slate-900/40 border border-slate-800/60 rounded-[2.5rem] backdrop-blur-sm shadow-2xl overflow-hidden transition-all duration-500">
           <button 
             onClick={() => setIsAllocationOpen(!isAllocationOpen)}
@@ -208,6 +209,7 @@ const App: React.FC = () => {
                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 font-mono text-2xl">$</div>
                    <input 
                     type="number" 
+                    inputMode="decimal"
                     step="0.01"
                     value={params.balance || ''}
                     onChange={(e) => handleInputChange('balance', e.target.value)}
@@ -224,6 +226,7 @@ const App: React.FC = () => {
                   <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 font-mono text-2xl">$</div>
                   <input 
                     type="number" 
+                    inputMode="decimal"
                     step="0.01"
                     value={parseFloat(results.riskAmount.toFixed(2)) || ''}
                     onChange={(e) => handleRiskAmountChange(e.target.value)}
@@ -237,6 +240,7 @@ const App: React.FC = () => {
                 <div className="relative">
                   <input 
                     type="number" 
+                    inputMode="decimal"
                     step="0.01"
                     value={params.riskPercent || ''}
                     onChange={(e) => handleInputChange('riskPercent', e.target.value)}
@@ -249,8 +253,11 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <section className="lg:col-span-4 space-y-6">
+        {/* side-by-side starting from sm: breakpoint (Landscape Mobile) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 items-stretch">
+          
+          {/* Execution Strategy */}
+          <section className="space-y-6">
             <div className="bg-slate-900/40 border border-slate-800/60 rounded-[2.5rem] p-8 backdrop-blur-sm shadow-xl h-full">
               <h2 className="text-sm font-black mb-8 flex items-center gap-3 text-slate-400 uppercase tracking-[0.2em]">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
@@ -261,6 +268,7 @@ const App: React.FC = () => {
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Entry Price</label>
                   <input 
                     type="number" 
+                    inputMode="decimal"
                     step="0.01"
                     value={params.entryPrice || ''}
                     onChange={(e) => handleInputChange('entryPrice', e.target.value)}
@@ -274,6 +282,7 @@ const App: React.FC = () => {
                   </div>
                   <input 
                     type="number" 
+                    inputMode="decimal"
                     step="0.01"
                     value={params.stopPrice || ''}
                     onChange={(e) => handleInputChange('stopPrice', e.target.value)}
@@ -295,6 +304,7 @@ const App: React.FC = () => {
                   </div>
                   <input 
                     type="number" 
+                    inputMode="decimal"
                     step="0.01"
                     value={params.takeProfitPrice || ''}
                     onChange={(e) => handleInputChange('takeProfitPrice', e.target.value)}
@@ -305,60 +315,65 @@ const App: React.FC = () => {
             </div>
           </section>
 
-          <section className="lg:col-span-8 space-y-8">
-            <div className={`bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-800 rounded-[3.5rem] p-12 shadow-[0_40px_80px_rgba(79,70,229,0.45)] relative overflow-hidden group border border-white/10 transition-all duration-500 ${isOverLeveraged ? 'ring-8 ring-rose-500/30' : ''}`}>
+          {/* Results Card */}
+          <section className="space-y-8">
+            <div className={`bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-800 rounded-[3.5rem] p-10 md:p-12 shadow-[0_40px_80px_rgba(79,70,229,0.45)] relative overflow-hidden group border border-white/10 transition-all duration-500 h-full flex flex-col justify-center ${isOverLeveraged ? 'ring-8 ring-rose-500/30' : ''}`}>
               <div className="absolute -top-16 -right-16 p-8 opacity-10 group-hover:scale-125 transition-transform duration-[2000ms]">
                 <RocketLaunchIcon className="w-96 h-96 rotate-[15deg]" />
               </div>
               
-              <div className="relative z-10 flex flex-col gap-10">
-                <div className={`absolute top-0 right-0 flex items-center gap-3 px-8 py-4 rounded-[2rem] font-black text-sm backdrop-blur-2xl shadow-2xl border-2 border-white/40 uppercase tracking-[0.25em] transition-all duration-500 ${
-                  results.positionType === 'LONG' ? 'bg-emerald-500/40 text-emerald-100 shadow-emerald-500/20' :
-                  results.positionType === 'SHORT' ? 'bg-rose-500/40 text-rose-100 shadow-rose-500/20' : 'bg-slate-500/30 text-slate-300'
-                }`}>
-                  {results.positionType === 'LONG' && <ArrowTrendingUpIcon className="w-5 h-5 stroke-[3]" />}
-                  {results.positionType === 'SHORT' && <ArrowTrendingDownIcon className="w-5 h-5 stroke-[3]" />}
-                  {results.positionType} POSITION
-                </div>
-
-                <div className="flex flex-col">
-                  <span className="text-indigo-100/70 text-[11px] font-black uppercase tracking-[0.4em] flex items-center gap-3 mb-2">
+              <div className="relative z-10 flex flex-col gap-6 items-center text-center">
+                <div className="flex flex-col items-center w-full">
+                  <span className="text-indigo-100/70 text-[11px] font-black uppercase tracking-[0.4em] flex items-center gap-3 mb-4">
                     <ScaleIcon className="w-4 h-4" /> RECOMMENDED SIZE
                   </span>
-                  <div className="flex items-baseline gap-4">
-                    <h3 className="text-[7.5rem] md:text-[8.5rem] leading-none font-black font-mono tracking-tighter text-white drop-shadow-[0_15px_35px_rgba(0,0,0,0.6)]">
+                  
+                  {/* Position Badge: Centered below title and above size */}
+                  <div className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs backdrop-blur-2xl shadow-2xl border-2 border-white/40 uppercase tracking-[0.25em] transition-all duration-500 mb-6 ${
+                    results.positionType === 'LONG' ? 'bg-emerald-500/40 text-emerald-100 shadow-emerald-500/20' :
+                    results.positionType === 'SHORT' ? 'bg-rose-500/40 text-rose-100 shadow-rose-500/20' : 'bg-slate-500/30 text-slate-300'
+                  }`}>
+                    {results.positionType === 'LONG' && <ArrowTrendingUpIcon className="w-4 h-4 stroke-[3]" />}
+                    {results.positionType === 'SHORT' && <ArrowTrendingDownIcon className="w-4 h-4 stroke-[3]" />}
+                    {results.positionType} POSITION
+                  </div>
+
+                  <div className="flex flex-col items-center md:flex-row md:items-baseline gap-4">
+                    <h3 className="text-[6.5rem] lg:text-[8.5rem] leading-none font-black font-mono tracking-tighter text-white drop-shadow-[0_15px_35px_rgba(0,0,0,0.6)]">
                       {results.positionSize > 0 ? Math.round(results.positionSize).toLocaleString() : '0'}
                     </h3>
-                    <span className="text-indigo-200 font-black text-3xl md:text-5xl uppercase tracking-[0.2em] opacity-80">SHARES</span>
+                    <span className="text-indigo-200 font-black text-2xl lg:text-4xl uppercase tracking-[0.2em] opacity-80">SHARES</span>
                   </div>
                 </div>
 
                 {isOverLeveraged && (
-                  <div className="p-8 bg-rose-500/20 border-2 border-rose-500/60 rounded-[2.5rem] backdrop-blur-xl flex flex-col md:flex-row items-center gap-6 animate-in slide-in-from-top-6 duration-700 shadow-[0_20px_50px_rgba(244,63,94,0.3)]">
-                    <div className="bg-rose-500 p-4 rounded-3xl shadow-2xl ring-4 ring-rose-500/30">
-                      <ExclamationTriangleIcon className="w-10 h-10 text-white" />
+                  <div className="w-full p-8 bg-rose-500/20 border-2 border-rose-500/60 rounded-[2.5rem] backdrop-blur-xl flex flex-col items-center gap-4 animate-in slide-in-from-top-6 duration-700 shadow-[0_20px_50px_rgba(244,63,94,0.3)]">
+                    <div className="bg-rose-500 p-3 rounded-2xl shadow-2xl ring-4 ring-rose-500/30 shrink-0">
+                      <ExclamationTriangleIcon className="w-8 h-8 text-white" />
                     </div>
-                    <div className="text-center md:text-left">
-                      <h4 className="text-rose-100 font-black uppercase tracking-[0.2em] text-base">Insufficient Capital Alert</h4>
-                      <p className="text-rose-200/90 text-sm font-medium mt-2 leading-relaxed">
-                        Purchasing <span className="font-mono font-bold text-white underline decoration-rose-400">{Math.round(results.positionSize).toLocaleString()}</span> shares requires <span className="font-mono font-bold text-white">${results.notionalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>. This is <span className="text-white font-black">+{((results.notionalValue/params.balance)*100 - 100).toFixed(0)}%</span> over your available liquidity.
+                    <div className="text-center">
+                      <h4 className="text-rose-100 font-black uppercase tracking-[0.2em] text-sm">Insufficient Capital</h4>
+                      <p className="text-rose-200/90 text-xs font-medium mt-1 leading-relaxed">
+                        Requires <span className="font-mono font-bold text-white">${results.notionalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span> liquidity.
                       </p>
                     </div>
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-white/10 rounded-[3rem] p-8 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center">
-                    <p className="text-indigo-100/60 text-[11px] font-black uppercase mb-4 tracking-[0.2em]">Dollar Risk</p>
-                    <p className="text-white font-mono text-4xl md:text-5xl font-black">${results.riskAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                {/* Footer Stats Grid: configured for Tablet Portrait requirements */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full mt-4">
+                  <div className="bg-white/10 rounded-[2rem] p-5 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center">
+                    <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">Dollar Risk</p>
+                    <p className="text-white font-mono text-2xl lg:text-3xl font-black">${results.riskAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                   </div>
-                  <div className="bg-white/10 rounded-[3rem] p-8 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center">
-                    <p className="text-indigo-100/60 text-[11px] font-black uppercase mb-4 tracking-[0.2em]">Target Profit</p>
-                    <p className="text-emerald-300 font-mono text-4xl md:text-5xl font-black">${results.potentialProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                  <div className="bg-white/10 rounded-[2rem] p-5 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center">
+                    <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">Target Profit</p>
+                    <p className="text-emerald-300 font-mono text-2xl lg:text-3xl font-black">${results.potentialProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                   </div>
-                  <div className={`bg-white/10 rounded-[3rem] p-8 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center min-w-[180px] ${results.riskRewardRatio < 2 ? 'border-rose-400/50 shadow-rose-500/10' : 'border-emerald-400/50 shadow-emerald-500/10'}`}>
-                    <p className="text-indigo-100/60 text-[11px] font-black uppercase mb-4 tracking-[0.2em]">R/R Factor</p>
-                    <div className="grid grid-cols-[1fr_auto_1fr] gap-4 w-full items-center text-white font-mono text-4xl md:text-5xl font-black">
+                  {/* R/R Factor below on tablet portrait (sm), but side-by-side on desktop (lg) */}
+                  <div className={`bg-white/10 rounded-[2rem] p-5 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center sm:col-span-2 lg:col-span-1 ${results.riskRewardRatio < 2 ? 'border-rose-400/50 shadow-rose-500/10' : 'border-emerald-400/50 shadow-emerald-500/10'}`}>
+                    <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">R/R Factor</p>
+                    <div className="grid grid-cols-[1fr_auto_1fr] gap-2 w-full max-w-[200px] items-center text-white font-mono text-2xl lg:text-3xl font-black mx-auto">
                       <div className="text-right">1</div>
                       <div className="text-center opacity-70">:</div>
                       <div className="text-left">{formatRewardValue(results.riskRewardRatio)}</div>
@@ -367,66 +382,67 @@ const App: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            <div className="bg-slate-900/60 border border-slate-800 rounded-[3rem] p-10 backdrop-blur-2xl relative overflow-hidden group border-dashed shadow-2xl">
-              <div className="flex items-center gap-5 mb-8">
-                <div className="bg-indigo-500/10 p-4 rounded-2xl border border-indigo-500/10 shadow-lg">
-                  <ChartBarIcon className="w-8 h-8 text-indigo-400" />
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-200 uppercase tracking-[0.2em] text-xs">Performance Projections</h3>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Growth Matrix</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                 <div className="space-y-4">
-                   <p className="text-[11px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
-                     <ArrowTrendingUpIcon className="w-5 h-5" /> Reward Outcome
-                   </p>
-                   <div className="flex items-baseline gap-4">
-                      <p className="text-6xl font-mono font-black text-emerald-300 drop-shadow-[0_8px_20px_rgba(16,185,129,0.3)]">
-                        +${results.potentialProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                      </p>
-                      <p className="text-xs font-black text-emerald-500/70 uppercase">PROFIT</p>
-                   </div>
-                   <div className="bg-emerald-500/5 p-6 rounded-[2rem] border border-emerald-500/10 flex items-center gap-4">
-                     <div className="h-12 w-1.5 bg-emerald-500 rounded-full"></div>
-                     <div>
-                       <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Projected Growth</p>
-                       <p className="text-2xl font-mono font-black text-emerald-400">
-                         {params.balance > 0 ? ((results.potentialProfit / params.balance) * 100).toFixed(2) : 0}%
-                       </p>
-                     </div>
-                   </div>
-                 </div>
-                 <div className="space-y-4">
-                   <p className="text-[11px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2">
-                     <ArrowTrendingDownIcon className="w-5 h-5" /> Drawdown Exposure
-                   </p>
-                   <div className="flex items-baseline gap-4">
-                      <p className="text-6xl font-mono font-black text-rose-300 drop-shadow-[0_8px_20px_rgba(244,63,94,0.3)]">
-                        -${results.riskAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                      </p>
-                      <p className="text-xs font-black text-rose-500/70 uppercase">LOSS</p>
-                   </div>
-                   <div className="bg-rose-500/5 p-6 rounded-[2rem] border border-rose-500/10 flex items-center gap-4">
-                     <div className="h-12 w-1.5 bg-rose-500 rounded-full"></div>
-                     <div>
-                       <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Account Decay</p>
-                       <p className="text-2xl font-mono font-black text-rose-400">
-                         {params.riskPercent.toFixed(2)}%
-                       </p>
-                     </div>
-                   </div>
-                 </div>
-              </div>
-            </div>
           </section>
+        </div>
+
+        {/* Projections Row */}
+        <div className="bg-slate-900/60 border border-slate-800 rounded-[3rem] p-10 backdrop-blur-2xl relative overflow-hidden group border-dashed shadow-2xl">
+          <div className="flex items-center gap-5 mb-8">
+            <div className="bg-indigo-500/10 p-4 rounded-2xl border border-indigo-500/10 shadow-lg">
+              <ChartBarIcon className="w-8 h-8 text-indigo-400" />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-200 uppercase tracking-[0.2em] text-xs">Performance Projections</h3>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Growth Matrix</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+             <div className="space-y-4">
+               <p className="text-[11px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
+                 <ArrowTrendingUpIcon className="w-5 h-5" /> Reward Outcome
+               </p>
+               <div className="flex items-baseline gap-4">
+                  <p className="text-6xl font-mono font-black text-emerald-300 drop-shadow-[0_8px_20px_rgba(16,185,129,0.3)]">
+                    +${results.potentialProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </p>
+                  <p className="text-xs font-black text-emerald-500/70 uppercase">PROFIT</p>
+               </div>
+               <div className="bg-emerald-500/5 p-6 rounded-[2rem] border border-emerald-500/10 flex items-center gap-4">
+                 <div className="h-12 w-1.5 bg-emerald-500 rounded-full"></div>
+                 <div>
+                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Projected Growth</p>
+                   <p className="text-2xl font-mono font-black text-emerald-400">
+                     {params.balance > 0 ? ((results.potentialProfit / params.balance) * 100).toFixed(2) : 0}%
+                   </p>
+                 </div>
+               </div>
+             </div>
+             <div className="space-y-4">
+               <p className="text-[11px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2">
+                 <ArrowTrendingDownIcon className="w-5 h-5" /> Drawdown Exposure
+               </p>
+               <div className="flex items-baseline gap-4">
+                  <p className="text-6xl font-mono font-black text-rose-300 drop-shadow-[0_8px_20px_rgba(244,63,94,0.3)]">
+                    -${results.riskAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  </p>
+                  <p className="text-xs font-black text-rose-500/70 uppercase">LOSS</p>
+               </div>
+               <div className="bg-rose-500/5 p-6 rounded-[2rem] border border-rose-500/10 flex items-center gap-4">
+                 <div className="h-12 w-1.5 bg-rose-500 rounded-full"></div>
+                 <div>
+                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Account Decay</p>
+                   <p className="text-2xl font-mono font-black text-rose-400">
+                     {params.riskPercent.toFixed(2)}%
+                   </p>
+                 </div>
+               </div>
+             </div>
+          </div>
         </div>
       </main>
 
       <footer className="mt-auto pt-24 pb-12 text-center text-slate-800 text-[10px] font-black uppercase tracking-[0.6em] w-full max-w-6xl border-t border-slate-900/50">
-        TradeSize Pro &bull; Institutional Risk Engine &bull; PROTOCOL V6.6
+        TradeSize Pro &bull; Institutional Risk Engine &bull; PROTOCOL V6.9
       </footer>
     </div>
   );
