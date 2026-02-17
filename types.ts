@@ -21,4 +21,5 @@ export interface UserSettings {
   defaultBalance: number;
   defaultRiskPercent: number;
   defaultStopPercent: number;
+  language: 'en' | 'es';
 }

@@ -1,10 +1,8 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   CalculatorIcon, 
   ArrowTrendingUpIcon, 
   ArrowTrendingDownIcon, 
-  ArrowPathIcon, 
   BookmarkSquareIcon, 
   RocketLaunchIcon, 
   ScaleIcon, 
@@ -14,11 +12,78 @@ import {
   ExclamationTriangleIcon, 
   ChevronUpIcon, 
   ChevronDownIcon, 
-  AdjustmentsHorizontalIcon 
+  AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
 import { TradeParams, UserSettings } from './types';
 
-const STORAGE_KEY = 'tradesize_pro_v6_settings';
+const STORAGE_KEY = 'tradesize_pro_v8_settings';
+
+type Language = 'en' | 'es';
+
+const translations = {
+  en: {
+    sizing: "Position Sizing",
+    saveDefaults: "Save Defaults",
+    defaultsSaved: "Saved!",
+    allocationTitle: "Risk Management Setup",
+    balance: "Account Balance",
+    riskAmount: "Risk Amount",
+    riskPercent: "Risk Percentage",
+    executionTitle: "Execution Strategy",
+    entryPrice: "Entry Price",
+    stopLoss: "Stop Loss Level",
+    range: "RANGE",
+    targets: "Take Profit Targets",
+    recSize: "RECOMMENDED SIZE",
+    shares: "SHARES",
+    insufficient: "Insufficient Capital",
+    requires: "Requires",
+    liquidity: "liquidity",
+    risk: "Risk",
+    reward: "Reward",
+    rrFactor: "R/R Factor",
+    performance: "Performance Projections",
+    rewardOutcome: "Reward Outcome",
+    riskExposure: "Risk Exposure",
+    profit: "PROFIT",
+    loss: "LOSS",
+    accountGain: "Account Gain",
+    accountLoss: "Account Loss",
+    footer: "TradeSize Pro Copyright 2025",
+    invalidTarget: "Invalid Setup / Same Levels"
+  },
+  es: {
+    sizing: "Dimensionamiento de Posición",
+    saveDefaults: "Guardar Predeterminados",
+    defaultsSaved: "¡Guardado!",
+    allocationTitle: "Configuración de Gestión de Riesgos",
+    balance: "Saldo de la Cuenta",
+    riskAmount: "Monto de Riesgo",
+    riskPercent: "Porcentaje de Riesgo",
+    executionTitle: "Estrategia de Ejecución",
+    entryPrice: "Precio de Entrada",
+    stopLoss: "Nivel de Stop Loss",
+    range: "RANGO",
+    targets: "Objetivos de Ganancia",
+    recSize: "TAMAÑO RECOMENDADO",
+    shares: "ACCIONES",
+    insufficient: "Capital Insuficiente",
+    requires: "Requiere",
+    liquidity: "de liquidez",
+    risk: "Riesgo",
+    reward: "Recompensa",
+    rrFactor: "Factor R/R",
+    performance: "Proyecciones de Rendimiento",
+    rewardOutcome: "Resultado de Recompensa",
+    riskExposure: "Exposición al Riesgo",
+    profit: "GANANCIA",
+    loss: "PÉRDIDA",
+    accountGain: "Ganancia de Cuenta",
+    accountLoss: "Pérdida de Cuenta",
+    footer: "TradeSize Pro Copyright 2025",
+    invalidTarget: "Configuración Inválida / Niveles Iguales"
+  }
+};
 
 const App: React.FC = () => {
   const loadSettings = (): UserSettings => {
@@ -30,23 +95,43 @@ const App: React.FC = () => {
         console.error("Failed to parse settings", e);
       }
     }
-    return { defaultBalance: 10000, defaultRiskPercent: 1, defaultStopPercent: 2 };
+    return { 
+      defaultBalance: 10000, 
+      defaultRiskPercent: 1, 
+      defaultStopPercent: 13.33,
+      language: 'en'
+    };
   };
 
   const [settings, setSettings] = useState<UserSettings>(loadSettings());
+  const [lang, setLang] = useState<Language>(settings.language || 'en');
+  const t = translations[lang];
+
   const [isAllocationOpen, setIsAllocationOpen] = useState(true);
   
   const [params, setParams] = useState<TradeParams>(() => {
-    const entry = 100.00;
-    const stop = entry * (1 - (settings.defaultStopPercent / 100));
     return {
       balance: settings.defaultBalance,
       riskPercent: settings.defaultRiskPercent,
-      entryPrice: entry,
-      stopPrice: stop,
-      takeProfitPrice: entry + (Math.abs(entry - stop) * 2),
+      entryPrice: 1.50,
+      stopPrice: 1.30,
+      takeProfitPrice: 1.70,
     };
   });
+
+  const formatNum = (val: number, decimals: number = 2) => {
+    return val.toLocaleString(undefined, { 
+      minimumFractionDigits: decimals, 
+      maximumFractionDigits: decimals 
+    });
+  };
+
+  // Raw string states to allow free typing of decimals without formatting jumps
+  const [balanceStr, setBalanceStr] = useState(params.balance.toString());
+  const [entryPriceStr, setEntryPriceStr] = useState(params.entryPrice.toString());
+  const [stopPriceStr, setStopPriceStr] = useState(params.stopPrice.toString());
+  const [tpPriceStr, setTpPriceStr] = useState(params.takeProfitPrice.toString());
+  const [riskPercentStr, setRiskPercentStr] = useState(params.riskPercent.toString());
 
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
 
@@ -56,19 +141,38 @@ const App: React.FC = () => {
     const stopLossPercentage = params.entryPrice > 0 ? (priceDifference / params.entryPrice) * 100 : 0;
     
     let positionType: 'LONG' | 'SHORT' | 'INVALID' = 'INVALID';
-    if (params.entryPrice > 0 && params.stopPrice > 0) {
+    let isTargetValid = true;
+
+    // Check if entry and stop are the same
+    if (params.entryPrice > 0 && params.stopPrice > 0 && params.entryPrice !== params.stopPrice) {
       positionType = params.stopPrice < params.entryPrice ? 'LONG' : 'SHORT';
+    } else {
+      positionType = 'INVALID';
     }
 
-    const positionSize = priceDifference > 0 ? riskAmount / priceDifference : 0;
+    // Check if entry and TP are the same
+    if (params.entryPrice === params.takeProfitPrice) {
+      isTargetValid = false;
+    }
+
+    const positionSize = positionType !== 'INVALID' ? riskAmount / priceDifference : 0;
     const notionalValue = positionSize * params.entryPrice;
     
     let riskRewardRatio = 0;
     let potentialProfit = 0;
-    if (params.takeProfitPrice > 0 && priceDifference > 0) {
-      const rewardDiff = Math.abs(params.takeProfitPrice - params.entryPrice);
-      riskRewardRatio = rewardDiff / priceDifference;
-      potentialProfit = positionSize * rewardDiff;
+
+    if (isTargetValid && params.takeProfitPrice > 0 && positionType !== 'INVALID') {
+      if (positionType === 'LONG') {
+        isTargetValid = params.takeProfitPrice > params.entryPrice;
+      } else if (positionType === 'SHORT') {
+        isTargetValid = params.takeProfitPrice < params.entryPrice;
+      }
+
+      if (isTargetValid) {
+        const rewardDiff = Math.abs(params.takeProfitPrice - params.entryPrice);
+        riskRewardRatio = rewardDiff / priceDifference;
+        potentialProfit = positionSize * rewardDiff;
+      }
     }
 
     return {
@@ -79,30 +183,71 @@ const App: React.FC = () => {
       riskRewardRatio,
       stopLossPercentage,
       potentialProfit,
-      notionalValue
+      notionalValue,
+      isTargetValid: isTargetValid && positionType !== 'INVALID'
     };
   }, [params]);
 
-  const handleInputChange = (key: keyof TradeParams, value: string) => {
-    const numValue = value === '' ? 0 : parseFloat(value);
-    setParams(prev => ({ ...prev, [key]: numValue }));
+  const formatCurrencyAmount = (val: number) => {
+    const absVal = Math.abs(val);
+    const decimals = absVal > 500 ? 0 : 2;
+    return val.toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
   };
 
-  const handleRiskAmountChange = (value: string) => {
-    const cashValue = value === '' ? 0 : parseFloat(value);
-    const newPercent = params.balance > 0 ? (cashValue / params.balance) * 100 : 0;
-    setParams(prev => ({ ...prev, riskPercent: parseFloat(newPercent.toFixed(4)) }));
+  const parseString = (val: string) => {
+    // Replace commas (thousands) with empty and then dots with dots
+    // If locale uses comma as decimal, this logic needs adjustment, 
+    // but standard HTML5 input parseFloat behavior uses dot.
+    const cleaned = val.replace(/,/g, '');
+    return cleaned === '' ? 0 : parseFloat(cleaned);
+  };
+
+  const handleBalanceChange = (val: string) => {
+    setBalanceStr(val);
+    const num = parseString(val);
+    if (!isNaN(num)) {
+      setParams(prev => ({ ...prev, balance: Math.max(0, num) }));
+    }
+  };
+
+  const handleRiskAmountChange = (val: string) => {
+    const cashValue = parseString(val);
+    if (!isNaN(cashValue)) {
+      const clampedCashValue = Math.min(cashValue, params.balance);
+      const newPercent = params.balance > 0 ? (clampedCashValue / params.balance) * 100 : 0;
+      setParams(prev => ({ 
+        ...prev, 
+        riskPercent: parseFloat(Math.min(100, newPercent).toFixed(4)) 
+      }));
+      setRiskPercentStr(newPercent.toFixed(4));
+    }
+  };
+
+  const handlePriceChange = (key: keyof TradeParams, val: string) => {
+    if (key === 'entryPrice') setEntryPriceStr(val);
+    if (key === 'stopPrice') setStopPriceStr(val);
+    if (key === 'takeProfitPrice') setTpPriceStr(val);
+    if (key === 'riskPercent') setRiskPercentStr(val);
+
+    const num = parseString(val);
+    if (!isNaN(num)) {
+      setParams(prev => ({ ...prev, [key]: num }));
+    }
   };
 
   const saveAsDefaults = () => {
     const newSettings: UserSettings = {
       defaultBalance: params.balance,
       defaultRiskPercent: params.riskPercent,
-      defaultStopPercent: results.stopLossPercentage
+      defaultStopPercent: results.stopLossPercentage,
+      language: lang
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
     setSettings(newSettings);
-    setSaveFeedback("Defaults Saved!");
+    setSaveFeedback(t.defaultsSaved);
     setTimeout(() => {
       setSaveFeedback(null);
       setIsAllocationOpen(false);
@@ -110,16 +255,18 @@ const App: React.FC = () => {
   };
 
   const setQuickTarget = (ratio: number) => {
+    if (results.positionType === 'INVALID') return;
     const riskDiff = Math.abs(params.entryPrice - params.stopPrice);
-    if (riskDiff === 0) return;
-
+    
     let targetPrice = 0;
     if (results.positionType === 'LONG') {
       targetPrice = params.entryPrice + (riskDiff * ratio);
     } else {
       targetPrice = params.entryPrice - (riskDiff * ratio);
     }
-    setParams(prev => ({ ...prev, takeProfitPrice: parseFloat(targetPrice.toFixed(2)) }));
+    const finalPrice = parseFloat(targetPrice.toFixed(2));
+    setParams(prev => ({ ...prev, takeProfitPrice: finalPrice }));
+    setTpPriceStr(finalPrice.toString());
   };
 
   const formatRewardValue = (val: number) => {
@@ -129,6 +276,10 @@ const App: React.FC = () => {
   };
 
   const isOverLeveraged = results.notionalValue > params.balance && params.balance > 0;
+
+  const sharesLabel = results.positionSize > 999 
+    ? (lang === 'en' ? 'SH' : 'ACC') 
+    : t.shares;
 
   return (
     <div className="min-h-screen bg-[#020617] text-slate-100 flex flex-col items-center p-4 md:p-8 selection:bg-indigo-500/30">
@@ -141,11 +292,28 @@ const App: React.FC = () => {
             <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
               TradeSize Pro
             </h1>
-            <p className="text-slate-500 text-sm font-medium uppercase tracking-[0.2em] pt-1">Institutional Risk Protocol</p>
+            <p className="text-slate-500 text-sm font-medium uppercase tracking-[0.2em] pt-1">
+              {t.sizing}
+            </p>
           </div>
         </div>
         
         <div className="flex gap-3">
+          <div className="flex bg-slate-800/50 border border-slate-700 rounded-2xl p-1">
+            <button 
+              onClick={() => setLang('en')}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${lang === 'en' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              EN
+            </button>
+            <button 
+              onClick={() => setLang('es')}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition-all ${lang === 'es' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              ES
+            </button>
+          </div>
+
           <button 
             onClick={saveAsDefaults}
             className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black transition-all border uppercase tracking-[0.15em] shadow-lg ${
@@ -153,28 +321,14 @@ const App: React.FC = () => {
             }`}
           >
             <BookmarkSquareIcon className="w-4 h-4 text-indigo-400" />
-            {saveFeedback || "Save Defaults"}
-          </button>
-          <button 
-            onClick={() => setParams({ 
-              ...params, 
-              balance: settings.defaultBalance,
-              riskPercent: settings.defaultRiskPercent,
-              entryPrice: 100.00,
-              stopPrice: 100 * (1 - (settings.defaultStopPercent / 100)),
-              takeProfitPrice: 100 + (Math.abs(100 - (100 * (1 - (settings.defaultStopPercent / 100)))) * 2)
-            })}
-            className="p-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700 rounded-2xl transition-all shadow-md"
-            title="Reload Defaults"
-          >
-            <ArrowPathIcon className="w-6 h-6 text-slate-400" />
+            {saveFeedback || t.saveDefaults}
           </button>
         </div>
       </header>
 
       <main className="w-full max-w-6xl space-y-8">
         
-        {/* Capital Allocation */}
+        {/* Risk Management Setup */}
         <section className="bg-slate-900/40 border border-slate-800/60 rounded-[2.5rem] backdrop-blur-sm shadow-2xl overflow-hidden transition-all duration-500">
           <button 
             onClick={() => setIsAllocationOpen(!isAllocationOpen)}
@@ -185,14 +339,14 @@ const App: React.FC = () => {
                 <AdjustmentsHorizontalIcon className="w-6 h-6 text-white" />
               </div>
               <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.25em]">
-                Capital Allocation Strategy
+                {t.allocationTitle}
               </h2>
             </div>
             <div className="flex items-center gap-4">
                {!isAllocationOpen && (
                  <div className="hidden md:flex gap-6 text-[11px] font-black uppercase tracking-widest text-indigo-400 mr-4">
-                    <span>Balance: ${params.balance.toLocaleString()}</span>
-                    <span>Risk: ${results.riskAmount.toLocaleString()} ({params.riskPercent}%)</span>
+                    <span>{t.balance}: ${formatNum(params.balance)}</span>
+                    <span>{t.riskAmount}: ${formatCurrencyAmount(results.riskAmount)} ({formatNum(params.riskPercent, 2)}%)</span>
                  </div>
                )}
                {isAllocationOpen ? <ChevronUpIcon className="w-5 h-5 text-slate-600 group-hover:text-indigo-400" /> : <ChevronDownIcon className="w-5 h-5 text-slate-600 group-hover:text-indigo-400" />}
@@ -203,16 +357,14 @@ const App: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="space-y-3">
                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                  <BanknotesIcon className="w-4 h-4" /> Account Balance ($)
+                  <BanknotesIcon className="w-4 h-4" /> {t.balance} ($)
                 </label>
                 <div className="relative">
                    <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 font-mono text-2xl">$</div>
                    <input 
-                    type="number" 
-                    inputMode="decimal"
-                    step="0.01"
-                    value={params.balance || ''}
-                    onChange={(e) => handleInputChange('balance', e.target.value)}
+                    type="text" 
+                    value={balanceStr}
+                    onChange={(e) => handleBalanceChange(e.target.value)}
                     className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-3xl pl-12 pr-6 py-5 text-3xl font-mono focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all shadow-inner"
                   />
                 </div>
@@ -220,15 +372,13 @@ const App: React.FC = () => {
 
               <div className="space-y-3">
                 <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                  <ArrowsRightLeftIcon className="w-4 h-4 text-indigo-400" /> Risk Amount ($)
+                  <ArrowsRightLeftIcon className="w-4 h-4 text-indigo-400" /> {t.riskAmount} ($)
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-500 font-mono text-2xl">$</div>
                   <input 
-                    type="number" 
-                    inputMode="decimal"
-                    step="0.01"
-                    value={parseFloat(results.riskAmount.toFixed(2)) || ''}
+                    type="text" 
+                    value={results.riskAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                     onChange={(e) => handleRiskAmountChange(e.target.value)}
                     className="w-full bg-slate-950 border-2 border-indigo-500/30 rounded-3xl pl-12 pr-6 py-5 text-3xl font-mono focus:border-indigo-500 outline-none transition-all text-indigo-400 font-black shadow-2xl"
                   />
@@ -236,14 +386,12 @@ const App: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">Risk Percentage (%)</label>
+                <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest">{t.riskPercent} (%)</label>
                 <div className="relative">
                   <input 
-                    type="number" 
-                    inputMode="decimal"
-                    step="0.01"
-                    value={params.riskPercent || ''}
-                    onChange={(e) => handleInputChange('riskPercent', e.target.value)}
+                    type="text" 
+                    value={riskPercentStr}
+                    onChange={(e) => handlePriceChange('riskPercent', e.target.value)}
                     className="w-full bg-slate-950/30 border-2 border-slate-800 rounded-3xl px-6 py-5 text-3xl font-mono focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all"
                   />
                   <div className="absolute inset-y-0 right-0 pr-6 flex items-center pointer-events-none text-slate-500 font-mono text-2xl">%</div>
@@ -253,7 +401,6 @@ const App: React.FC = () => {
           </div>
         </section>
 
-        {/* side-by-side starting from sm: breakpoint (Landscape Mobile) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 items-stretch">
           
           {/* Execution Strategy */}
@@ -261,54 +408,49 @@ const App: React.FC = () => {
             <div className="bg-slate-900/40 border border-slate-800/60 rounded-[2.5rem] p-8 backdrop-blur-sm shadow-xl h-full">
               <h2 className="text-sm font-black mb-8 flex items-center gap-3 text-slate-400 uppercase tracking-[0.2em]">
                 <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                Execution Strategy
+                {t.executionTitle}
               </h2>
               <div className="space-y-8">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Entry Price</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.entryPrice}</label>
                   <input 
-                    type="number" 
-                    inputMode="decimal"
-                    step="0.01"
-                    value={params.entryPrice || ''}
-                    onChange={(e) => handleInputChange('entryPrice', e.target.value)}
+                    type="text" 
+                    value={entryPriceStr}
+                    onChange={(e) => handlePriceChange('entryPrice', e.target.value)}
                     className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-2xl px-6 py-5 text-2xl font-mono focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none shadow-inner transition-all"
                   />
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-end mb-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Stop Loss Level</label>
-                    <span className="text-[9px] font-black text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 uppercase tracking-wider">{results.stopLossPercentage.toFixed(2)}% RANGE</span>
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.stopLoss}</label>
+                    <span className="text-[9px] font-black text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 uppercase tracking-wider">{results.stopLossPercentage.toFixed(2)}% {t.range}</span>
                   </div>
                   <input 
-                    type="number" 
-                    inputMode="decimal"
-                    step="0.01"
-                    value={params.stopPrice || ''}
-                    onChange={(e) => handleInputChange('stopPrice', e.target.value)}
+                    type="text" 
+                    value={stopPriceStr}
+                    onChange={(e) => handlePriceChange('stopPrice', e.target.value)}
                     className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-2xl px-6 py-5 text-2xl font-mono focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 outline-none shadow-inner transition-all"
                   />
                 </div>
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Take Profit Targets</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.targets}</label>
                   <div className="grid grid-cols-5 gap-2">
                       {[1, 2, 3, 5, 10].map(r => (
                         <button 
                           key={r}
                           onClick={() => setQuickTarget(r)}
-                          className="text-[10px] font-black bg-slate-800/50 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-600 hover:text-white px-1 py-4 rounded-xl transition-all shadow-md uppercase"
+                          disabled={results.positionType === 'INVALID'}
+                          className="text-[10px] font-black bg-slate-800/50 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-600 hover:text-white px-1 py-4 rounded-xl transition-all shadow-md uppercase disabled:opacity-20 disabled:cursor-not-allowed"
                         >
                           {r}R
                         </button>
                       ))}
                   </div>
                   <input 
-                    type="number" 
-                    inputMode="decimal"
-                    step="0.01"
-                    value={params.takeProfitPrice || ''}
-                    onChange={(e) => handleInputChange('takeProfitPrice', e.target.value)}
-                    className="w-full bg-slate-950/50 border-2 border-slate-800 rounded-2xl px-6 py-5 text-2xl font-mono focus:ring-4 focus:ring-cyan-500/10 focus:border-cyan-500 outline-none shadow-inner transition-all"
+                    type="text" 
+                    value={tpPriceStr}
+                    onChange={(e) => handlePriceChange('takeProfitPrice', e.target.value)}
+                    className={`w-full bg-slate-950/50 border-2 rounded-2xl px-6 py-5 text-2xl font-mono focus:ring-4 outline-none shadow-inner transition-all ${!results.isTargetValid ? 'border-rose-500/50 focus:ring-rose-500/10 focus:border-rose-500' : 'border-slate-800 focus:ring-cyan-500/10 focus:border-cyan-500'}`}
                   />
                 </div>
               </div>
@@ -325,10 +467,9 @@ const App: React.FC = () => {
               <div className="relative z-10 flex flex-col gap-6 items-center text-center">
                 <div className="flex flex-col items-center w-full">
                   <span className="text-indigo-100/70 text-[11px] font-black uppercase tracking-[0.4em] flex items-center gap-3 mb-4">
-                    <ScaleIcon className="w-4 h-4" /> RECOMMENDED SIZE
+                    <ScaleIcon className="w-4 h-4" /> {t.recSize}
                   </span>
                   
-                  {/* Position Badge: Centered below title and above size */}
                   <div className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs backdrop-blur-2xl shadow-2xl border-2 border-white/40 uppercase tracking-[0.25em] transition-all duration-500 mb-6 ${
                     results.positionType === 'LONG' ? 'bg-emerald-500/40 text-emerald-100 shadow-emerald-500/20' :
                     results.positionType === 'SHORT' ? 'bg-rose-500/40 text-rose-100 shadow-rose-500/20' : 'bg-slate-500/30 text-slate-300'
@@ -342,7 +483,7 @@ const App: React.FC = () => {
                     <h3 className="text-[6.5rem] lg:text-[8.5rem] leading-none font-black font-mono tracking-tighter text-white drop-shadow-[0_15px_35px_rgba(0,0,0,0.6)]">
                       {results.positionSize > 0 ? Math.round(results.positionSize).toLocaleString() : '0'}
                     </h3>
-                    <span className="text-indigo-200 font-black text-2xl lg:text-4xl uppercase tracking-[0.2em] opacity-80">SHARES</span>
+                    <span className="text-indigo-200 font-black text-2xl lg:text-4xl uppercase tracking-[0.2em] opacity-80">{sharesLabel}</span>
                   </div>
                 </div>
 
@@ -352,27 +493,25 @@ const App: React.FC = () => {
                       <ExclamationTriangleIcon className="w-8 h-8 text-white" />
                     </div>
                     <div className="text-center">
-                      <h4 className="text-rose-100 font-black uppercase tracking-[0.2em] text-sm">Insufficient Capital</h4>
+                      <h4 className="text-rose-100 font-black uppercase tracking-[0.2em] text-sm">{t.insufficient}</h4>
                       <p className="text-rose-200/90 text-xs font-medium mt-1 leading-relaxed">
-                        Requires <span className="font-mono font-bold text-white">${results.notionalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span> liquidity.
+                        {t.requires} <span className="font-mono font-bold text-white">${formatNum(results.notionalValue)}</span> {t.liquidity}.
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* Footer Stats Grid: configured for Tablet Portrait requirements */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full mt-4">
                   <div className="bg-white/10 rounded-[2rem] p-5 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center">
-                    <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">Dollar Risk</p>
-                    <p className="text-white font-mono text-2xl lg:text-3xl font-black">${results.riskAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                    <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">{t.risk}</p>
+                    <p className="text-white font-mono text-2xl lg:text-3xl font-black">${formatCurrencyAmount(results.riskAmount)}</p>
                   </div>
-                  <div className="bg-white/10 rounded-[2rem] p-5 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center">
-                    <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">Target Profit</p>
-                    <p className="text-emerald-300 font-mono text-2xl lg:text-3xl font-black">${results.potentialProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                  <div className={`bg-white/10 rounded-[2rem] p-5 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center transition-opacity ${!results.isTargetValid ? 'opacity-40' : ''}`}>
+                    <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">{t.reward}</p>
+                    <p className="text-emerald-300 font-mono text-2xl lg:text-3xl font-black">${formatCurrencyAmount(results.potentialProfit)}</p>
                   </div>
-                  {/* R/R Factor below on tablet portrait (sm), but side-by-side on desktop (lg) */}
-                  <div className={`bg-white/10 rounded-[2rem] p-5 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center sm:col-span-2 lg:col-span-1 ${results.riskRewardRatio < 2 ? 'border-rose-400/50 shadow-rose-500/10' : 'border-emerald-400/50 shadow-emerald-500/10'}`}>
-                    <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">R/R Factor</p>
+                  <div className={`bg-white/10 rounded-[2rem] p-5 backdrop-blur-md border border-white/10 hover:bg-white/20 transition-all cursor-default shadow-xl text-center flex flex-col items-center justify-center sm:col-span-2 lg:col-span-1 ${!results.isTargetValid ? 'opacity-40' : results.riskRewardRatio < 2 ? 'border-rose-400/50 shadow-rose-500/10' : 'border-emerald-400/50 shadow-emerald-500/10'}`}>
+                    <p className="text-indigo-100/60 text-[9px] font-black uppercase mb-2 tracking-[0.2em]">{t.rrFactor}</p>
                     <div className="grid grid-cols-[1fr_auto_1fr] gap-2 w-full max-w-[200px] items-center text-white font-mono text-2xl lg:text-3xl font-black mx-auto">
                       <div className="text-right">1</div>
                       <div className="text-center opacity-70">:</div>
@@ -392,57 +531,64 @@ const App: React.FC = () => {
               <ChartBarIcon className="w-8 h-8 text-indigo-400" />
             </div>
             <div>
-              <h3 className="font-black text-slate-200 uppercase tracking-[0.2em] text-xs">Performance Projections</h3>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Growth Matrix</p>
+              <h3 className="font-black text-slate-200 uppercase tracking-[0.2em] text-xs">{t.performance}</h3>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-             <div className="space-y-4">
+             <div className={`space-y-4 transition-all ${!results.isTargetValid ? 'opacity-30 scale-95 blur-[1px]' : ''}`}>
                <p className="text-[11px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
-                 <ArrowTrendingUpIcon className="w-5 h-5" /> Reward Outcome
+                 <ArrowTrendingUpIcon className="w-5 h-5" /> {t.rewardOutcome}
                </p>
                <div className="flex items-baseline gap-4">
                   <p className="text-6xl font-mono font-black text-emerald-300 drop-shadow-[0_8px_20px_rgba(16,185,129,0.3)]">
-                    +${results.potentialProfit.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    +${formatCurrencyAmount(results.potentialProfit)}
                   </p>
-                  <p className="text-xs font-black text-emerald-500/70 uppercase">PROFIT</p>
+                  <p className="text-xs font-black text-emerald-500/70 uppercase">{t.profit}</p>
                </div>
                <div className="bg-emerald-500/5 p-6 rounded-[2rem] border border-emerald-500/10 flex items-center gap-4">
                  <div className="h-12 w-1.5 bg-emerald-500 rounded-full"></div>
                  <div>
-                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Projected Growth</p>
+                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">{t.accountGain}</p>
                    <p className="text-2xl font-mono font-black text-emerald-400">
                      {params.balance > 0 ? ((results.potentialProfit / params.balance) * 100).toFixed(2) : 0}%
                    </p>
                  </div>
                </div>
              </div>
-             <div className="space-y-4">
-               <p className="text-[11px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2">
-                 <ArrowTrendingDownIcon className="w-5 h-5" /> Drawdown Exposure
-               </p>
-               <div className="flex items-baseline gap-4">
-                  <p className="text-6xl font-mono font-black text-rose-300 drop-shadow-[0_8px_20px_rgba(244,63,94,0.3)]">
-                    -${results.riskAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                  </p>
-                  <p className="text-xs font-black text-rose-500/70 uppercase">LOSS</p>
+             
+             {!results.isTargetValid ? (
+               <div className="flex flex-col items-center justify-center space-y-4 text-center p-8 bg-rose-500/5 border-2 border-dashed border-rose-500/20 rounded-[3rem] animate-pulse">
+                 <ExclamationTriangleIcon className="w-12 h-12 text-rose-500/60" />
+                 <p className="text-rose-500 text-sm font-black uppercase tracking-[0.2em]">{t.invalidTarget}</p>
                </div>
-               <div className="bg-rose-500/5 p-6 rounded-[2rem] border border-rose-500/10 flex items-center gap-4">
-                 <div className="h-12 w-1.5 bg-rose-500 rounded-full"></div>
-                 <div>
-                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">Account Decay</p>
-                   <p className="text-2xl font-mono font-black text-rose-400">
-                     {params.riskPercent.toFixed(2)}%
-                   </p>
+             ) : (
+               <div className="space-y-4">
+                 <p className="text-[11px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-2">
+                   <ArrowTrendingDownIcon className="w-5 h-5" /> {t.riskExposure}
+                 </p>
+                 <div className="flex items-baseline gap-4">
+                    <p className="text-6xl font-mono font-black text-rose-300 drop-shadow-[0_8px_20px_rgba(244,63,94,0.3)]">
+                      -${formatCurrencyAmount(results.riskAmount)}
+                    </p>
+                    <p className="text-xs font-black text-rose-500/70 uppercase">{t.loss}</p>
+                 </div>
+                 <div className="bg-rose-500/5 p-6 rounded-[2rem] border border-rose-500/10 flex items-center gap-4">
+                   <div className="h-12 w-1.5 bg-rose-500 rounded-full"></div>
+                   <div>
+                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-wider">{t.accountLoss}</p>
+                     <p className="text-2xl font-mono font-black text-rose-400">
+                       {formatNum(params.riskPercent, 2)}%
+                     </p>
+                   </div>
                  </div>
                </div>
-             </div>
+             )}
           </div>
         </div>
       </main>
 
       <footer className="mt-auto pt-24 pb-12 text-center text-slate-800 text-[10px] font-black uppercase tracking-[0.6em] w-full max-w-6xl border-t border-slate-900/50">
-        TradeSize Pro &bull; Institutional Risk Engine &bull; PROTOCOL V6.9
+        {t.footer}
       </footer>
     </div>
   );
